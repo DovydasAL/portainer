@@ -10,6 +10,7 @@ import (
 	"github.com/portainer/portainer/bolt/dockerhub"
 	"github.com/portainer/portainer/bolt/endpoint"
 	"github.com/portainer/portainer/bolt/endpointgroup"
+	"github.com/portainer/portainer/bolt/extension"
 	"github.com/portainer/portainer/bolt/migrator"
 	"github.com/portainer/portainer/bolt/registry"
 	"github.com/portainer/portainer/bolt/resourcecontrol"
@@ -39,6 +40,7 @@ type Store struct {
 	DockerHubService       *dockerhub.Service
 	EndpointGroupService   *endpointgroup.Service
 	EndpointService        *endpoint.Service
+	ExtensionService       *extension.Service
 	RegistryService        *registry.Service
 	ResourceControlService *resourcecontrol.Service
 	SettingsService        *settings.Service
@@ -137,9 +139,11 @@ func (store *Store) MigrateData() error {
 			DatabaseVersion:        version,
 			EndpointGroupService:   store.EndpointGroupService,
 			EndpointService:        store.EndpointService,
+			ExtensionService:       store.ExtensionService,
 			ResourceControlService: store.ResourceControlService,
 			SettingsService:        store.SettingsService,
 			StackService:           store.StackService,
+			TemplateService:        store.TemplateService,
 			UserService:            store.UserService,
 			VersionService:         store.VersionService,
 			FileService:            store.fileService,
@@ -175,6 +179,12 @@ func (store *Store) initServices() error {
 		return err
 	}
 	store.EndpointService = endpointService
+
+	extensionService, err := extension.NewService(store.db)
+	if err != nil {
+		return err
+	}
+	store.ExtensionService = extensionService
 
 	registryService, err := registry.NewService(store.db)
 	if err != nil {

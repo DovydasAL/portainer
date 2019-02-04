@@ -48,7 +48,7 @@ angular.module('portainer.app', [])
 
   var authentication = {
     name: 'portainer.auth',
-    url: '/auth',
+    url: '/auth?redirect',
     params: {
       logout: false,
       error: ''
@@ -87,7 +87,7 @@ angular.module('portainer.app', [])
     }
   };
 
-  var endpointCreation  = {
+  var endpointCreation = {
     name: 'portainer.endpoints.new',
     url: '/new',
     views: {
@@ -198,6 +198,28 @@ angular.module('portainer.app', [])
     }
   };
 
+  var extensions = {
+    name: 'portainer.extensions',
+    url: '/extensions',
+    views: {
+      'content@': {
+        templateUrl: 'app/portainer/views/extensions/extensions.html',
+        controller: 'ExtensionsController'
+      }
+    }
+  };
+
+  var extension = {
+    name: 'portainer.extensions.extension',
+    url: '/extension/:id',
+    views: {
+      'content@': {
+        templateUrl: 'app/portainer/views/extensions/inspect/extension.html',
+        controller: 'ExtensionController'
+      }
+    }
+  };
+
   var registries = {
     name: 'portainer.registries',
     url: '/registries',
@@ -220,7 +242,7 @@ angular.module('portainer.app', [])
     }
   };
 
-  var registryCreation  = {
+  var registryCreation = {
     name: 'portainer.registries.new',
     url: '/new',
     views: {
@@ -264,7 +286,7 @@ angular.module('portainer.app', [])
     }
   };
 
-  var scheduleCreation  = {
+  var scheduleCreation = {
     name: 'portainer.schedules.new',
     url: '/new',
     views: {
@@ -305,6 +327,16 @@ angular.module('portainer.app', [])
         templateUrl: 'app/portainer/views/stacks/stacks.html',
         controller: 'StacksController'
       }
+    },
+    resolve: {
+      endpointID: ['EndpointProvider', '$state', 
+        function (EndpointProvider, $state) {
+          var id = EndpointProvider.endpointID();
+          if (!id) {
+            return $state.go('portainer.home');
+          }
+        }
+      ]
     }
   };
 
@@ -320,7 +352,7 @@ angular.module('portainer.app', [])
   };
 
   var stackCreation = {
-    name: 'portainer.newstack',
+    name: 'portainer.stacks.newstack',
     url: '/newstack',
     views: {
       'content@': {
@@ -335,7 +367,22 @@ angular.module('portainer.app', [])
     url: '/support',
     views: {
       'content@': {
-        templateUrl: 'app/portainer/views/support/support.html'
+        templateUrl: 'app/portainer/views/support/support.html',
+        controller: 'SupportController'
+      }
+    },
+    params: {
+      product: {}
+    }
+  };
+
+  var supportProduct = {
+    name: 'portainer.support.product',
+    url: '/product',
+    views: {
+      'content@': {
+        templateUrl: 'app/portainer/views/support/product/product.html',
+        controller: 'SupportProductController'
       }
     }
   };
@@ -457,6 +504,8 @@ angular.module('portainer.app', [])
   $stateRegistryProvider.register(init);
   $stateRegistryProvider.register(initEndpoint);
   $stateRegistryProvider.register(initAdmin);
+  $stateRegistryProvider.register(extensions);
+  $stateRegistryProvider.register(extension);
   $stateRegistryProvider.register(registries);
   $stateRegistryProvider.register(registry);
   $stateRegistryProvider.register(registryAccess);
@@ -470,6 +519,7 @@ angular.module('portainer.app', [])
   $stateRegistryProvider.register(stack);
   $stateRegistryProvider.register(stackCreation);
   $stateRegistryProvider.register(support);
+  $stateRegistryProvider.register(supportProduct);
   $stateRegistryProvider.register(tags);
   $stateRegistryProvider.register(updatePassword);
   $stateRegistryProvider.register(users);

@@ -116,9 +116,10 @@ func initJobScheduler() portainer.JobScheduler {
 	return cron.NewJobScheduler()
 }
 
-func loadSnapshotSystemSchedule(jobScheduler portainer.JobScheduler, snapshotter portainer.Snapshotter, scheduleService portainer.ScheduleService, endpointService portainer.EndpointService, flags *portainer.CLIFlags) error {
-	if !*flags.Snapshot {
-		return nil
+func loadSnapshotSystemSchedule(jobScheduler portainer.JobScheduler, snapshotter portainer.Snapshotter, scheduleService portainer.ScheduleService, endpointService portainer.EndpointService, settingsService portainer.SettingsService) error {
+	settings, err := settingsService.Settings()
+	if err != nil {
+		return err
 	}
 
 	schedules, err := scheduleService.SchedulesByJobType(portainer.SnapshotJobType)
@@ -126,19 +127,20 @@ func loadSnapshotSystemSchedule(jobScheduler portainer.JobScheduler, snapshotter
 		return err
 	}
 
-	if len(schedules) != 0 {
-		return nil
-	}
-
-	snapshotJob := &portainer.SnapshotJob{}
-
-	snapshotSchedule := &portainer.Schedule{
-		ID:             portainer.ScheduleID(scheduleService.GetNextIdentifier()),
-		Name:           "system_snapshot",
-		CronExpression: "@every " + *flags.SnapshotInterval,
-		JobType:        portainer.SnapshotJobType,
-		SnapshotJob:    snapshotJob,
-		Created:        time.Now().Unix(),
+	var snapshotSchedule *portainer.Schedule
+	if len(schedules) == 0 {
+		snapshotJob := &portainer.SnapshotJob{}
+		snapshotSchedule = &portainer.Schedule{
+			ID:             portainer.ScheduleID(scheduleService.GetNextIdentifier()),
+			Name:           "system_snapshot",
+			CronExpression: "@every " + settings.SnapshotInterval,
+			Recurring:      true,
+			JobType:        portainer.SnapshotJobType,
+			SnapshotJob:    snapshotJob,
+			Created:        time.Now().Unix(),
+		}
+	} else {
+		snapshotSchedule = &schedules[0]
 	}
 
 	snapshotJobContext := cron.NewSnapshotJobContext(endpointService, snapshotter)
@@ -149,7 +151,10 @@ func loadSnapshotSystemSchedule(jobScheduler portainer.JobScheduler, snapshotter
 		return err
 	}
 
-	return scheduleService.CreateSchedule(snapshotSchedule)
+	if len(schedules) == 0 {
+		return scheduleService.CreateSchedule(snapshotSchedule)
+	}
+	return nil
 }
 
 func loadEndpointSyncSystemSchedule(jobScheduler portainer.JobScheduler, scheduleService portainer.ScheduleService, endpointService portainer.EndpointService, flags *portainer.CLIFlags) error {
@@ -174,6 +179,7 @@ func loadEndpointSyncSystemSchedule(jobScheduler portainer.JobScheduler, schedul
 		ID:              portainer.ScheduleID(scheduleService.GetNextIdentifier()),
 		Name:            "system_endpointsync",
 		CronExpression:  "@every " + *flags.SyncInterval,
+		Recurring:       true,
 		JobType:         portainer.EndpointSyncJobType,
 		EndpointSyncJob: endpointSyncJob,
 		Created:         time.Now().Unix(),
@@ -256,6 +262,7 @@ func initSettings(settingsService portainer.SettingsService, flags *portainer.CL
 			},
 			AllowBindMountsForRegularUsers:     true,
 			AllowPrivilegedModeForRegularUsers: true,
+			EnableHostManagementFeatures:       false,
 			SnapshotInterval:                   *flags.SnapshotInterval,
 		}
 
@@ -468,6 +475,42 @@ func initJobService(dockerClientFactory *docker.ClientFactory) portainer.JobServ
 	return docker.NewJobService(dockerClientFactory)
 }
 
+func initExtensionManager(fileService portainer.FileService, extensionService portainer.ExtensionService) (portainer.ExtensionManager, error) {
+	extensionManager := exec.NewExtensionManager(fileService, extensionService)
+
+	extensions, err := extensionService.Extensions()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, extension := range extensions {
+		err := extensionManager.EnableExtension(&extension, extension.License.LicenseKey)
+		if err != nil {
+			log.Printf("Unable to enable extension: %s [extension: %s]", err.Error(), extension.Name)
+			extension.Enabled = false
+			extension.License.Valid = false
+			extensionService.Persist(&extension)
+		}
+	}
+
+	return extensionManager, nil
+}
+
+func terminateIfNoAdminCreated(userService portainer.UserService) {
+	timer1 := time.NewTimer(5 * time.Minute)
+	<-timer1.C
+
+	users, err := userService.UsersByRole(portainer.AdministratorRole)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(users) == 0 {
+		log.Fatal("No administrator account was created after 5 min. Shutting down the Portainer instance for security reasons.")
+		return
+	}
+}
+
 func main() {
 	flags := initCLI()
 
@@ -491,30 +534,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	extensionManager, err := initExtensionManager(fileService, store.ExtensionService)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	clientFactory := initClientFactory(digitalSignatureService)
 
 	jobService := initJobService(clientFactory)
 
 	snapshotter := initSnapshotter(clientFactory)
-
-	jobScheduler := initJobScheduler()
-
-	err = loadSchedulesFromDatabase(jobScheduler, jobService, store.ScheduleService, store.EndpointService, fileService)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = loadEndpointSyncSystemSchedule(jobScheduler, store.ScheduleService, store.EndpointService, flags)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = loadSnapshotSystemSchedule(jobScheduler, snapshotter, store.ScheduleService, store.EndpointService, flags)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	jobScheduler.Start()
 
 	endpointManagement := true
 	if *flags.ExternalEndpoints != "" {
@@ -537,6 +566,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	jobScheduler := initJobScheduler()
+
+	err = loadSchedulesFromDatabase(jobScheduler, jobService, store.ScheduleService, store.EndpointService, fileService)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = loadEndpointSyncSystemSchedule(jobScheduler, store.ScheduleService, store.EndpointService, flags)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if *flags.Snapshot {
+		err = loadSnapshotSystemSchedule(jobScheduler, snapshotter, store.ScheduleService, store.EndpointService, store.SettingsService)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	jobScheduler.Start()
 
 	err = initDockerHub(store.DockerHubService)
 	if err != nil {
@@ -586,6 +636,10 @@ func main() {
 		}
 	}
 
+	if !*flags.NoAuth {
+		go terminateIfNoAdminCreated(store.UserService)
+	}
+
 	var server portainer.Server = &http.Server{
 		Status:                 applicationStatus,
 		BindAddress:            *flags.Addr,
@@ -597,6 +651,7 @@ func main() {
 		TeamMembershipService:  store.TeamMembershipService,
 		EndpointService:        store.EndpointService,
 		EndpointGroupService:   store.EndpointGroupService,
+		ExtensionService:       store.ExtensionService,
 		ResourceControlService: store.ResourceControlService,
 		SettingsService:        store.SettingsService,
 		RegistryService:        store.RegistryService,
@@ -608,6 +663,7 @@ func main() {
 		WebhookService:         store.WebhookService,
 		SwarmStackManager:      swarmStackManager,
 		ComposeStackManager:    composeStackManager,
+		ExtensionManager:       extensionManager,
 		CryptoService:          cryptoService,
 		JWTService:             jwtService,
 		FileService:            fileService,

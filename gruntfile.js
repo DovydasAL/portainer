@@ -2,9 +2,9 @@ var gruntfile_cfg = {};
 var loadGruntTasks = require('load-grunt-tasks');
 var os = require('os');
 var arch = os.arch();
-if ( arch === 'x64' ) arch = 'amd64';
+if (arch === 'x64') arch = 'amd64';
 
-module.exports = function (grunt) {
+module.exports = function(grunt) {
 
   loadGruntTasks(grunt, {
     pattern: ['grunt-*', 'gruntify-*']
@@ -48,46 +48,51 @@ module.exports = function (grunt) {
     'after-copy'
   ]);
   grunt.task.registerTask('release', 'release:<platform>:<arch>', function(p, a) {
-    grunt.task.run(['config:prod', 'clean:all', 'shell:buildBinary:'+p+':'+a, 'shell:downloadDockerBinary:'+p+':'+a, 'before-copy', 'copy:assets', 'after-copy' ]);
+    grunt.task.run(['config:prod', 'clean:all', 'shell:buildBinary:' + p + ':' + a, 'shell:downloadDockerBinary:' + p + ':' + a, 'before-copy', 'copy:assets', 'after-copy']);
   });
+
+  grunt.task.registerTask('devopsbuild', 'devopsbuild:<platform>:<arch>', function(p, a) {
+    grunt.task.run(['config:prod', 'clean:all', 'shell:buildBinaryOnDevOps:' + p + ':' + a, 'shell:downloadDockerBinary:' + p + ':' + a, 'before-copy', 'copy:assets', 'after-copy']);
+  });
+
   grunt.registerTask('lint', ['eslint']);
-  grunt.registerTask('run-dev', ['build', 'shell:run:'+arch, 'watch:build']);
+  grunt.registerTask('run-dev', ['build', 'shell:run:' + arch, 'watch:build']);
   grunt.registerTask('clear', ['clean:app']);
 
   // Load content of `vendor.yml` to src.jsVendor, src.cssVendor and src.angularVendor
   grunt.registerTask('vendor', function() {
-      var vendorFile = grunt.file.readYAML('vendor.yml');
-      for (var filelist in vendorFile) {
-          if (vendorFile.hasOwnProperty(filelist)) {
-              var list = vendorFile[filelist];
-              // Check if any of the files is missing
-              for (var itemIndex in list) {
-                  if (list.hasOwnProperty(itemIndex)) {
-                      var item = 'node_modules/'+list[itemIndex];
-                      if (!grunt.file.exists(item)) {
-                          grunt.fail.warn('Dependency file ' + item + ' not found.');
-                      }
-                      list[itemIndex] = item;
-                  }
-              }
-              // If none is missing, save the list
-              grunt.config('src.' + filelist + 'Vendor', list);
+    var vendorFile = grunt.file.readYAML('vendor.yml');
+    for (var filelist in vendorFile) {
+      if (vendorFile.hasOwnProperty(filelist)) {
+        var list = vendorFile[filelist];
+        // Check if any of the files is missing
+        for (var itemIndex in list) {
+          if (list.hasOwnProperty(itemIndex)) {
+            var item = 'node_modules/' + list[itemIndex];
+            if (!grunt.file.exists(item)) {
+              grunt.fail.warn('Dependency file ' + item + ' not found.');
+            }
+            list[itemIndex] = item;
           }
+        }
+        // If none is missing, save the list
+        grunt.config('src.' + filelist + 'Vendor', list);
       }
+    }
   });
 
   // Project configuration.
   grunt.initConfig({
     root: 'dist',
     distdir: 'dist/public',
-    shippedDockerVersion: '18.06.1-ce',
+    shippedDockerVersion: '18.09.0',
     shippedDockerVersionWindows: '17.09.0-ce',
     pkg: grunt.file.readJSON('package.json'),
     config: gruntfile_cfg.config,
     src: gruntfile_cfg.src,
     clean: gruntfile_cfg.clean,
     useminPrepare: gruntfile_cfg.useminPrepare,
-    filerev: { files: { src: ['<%= distdir %>/js/*.js', '<%= distdir %>/css/*.css'] }},
+    filerev: { files: { src: ['<%= distdir %>/js/*.js', '<%= distdir %>/css/*.css'] } },
     usemin: { html: ['<%= distdir %>/index.html'] },
     copy: gruntfile_cfg.copy,
     eslint: gruntfile_cfg.eslint,
@@ -108,8 +113,8 @@ var autoprefixer = require('autoprefixer');
 var cssnano = require('cssnano');
 
 gruntfile_cfg.config = {
-  dev:  { options: { variables: { 'environment': 'development' }}},
-  prod: { options: { variables: { 'environment': 'production'  }}}
+  dev: { options: { variables: { 'environment': 'development' } } },
+  prod: { options: { variables: { 'environment': 'production' } } }
 };
 
 gruntfile_cfg.src = {
@@ -152,18 +157,18 @@ gruntfile_cfg.useminPrepare = {
 gruntfile_cfg.copy = {
   bundle: {
     files: [
-      {dest:'<%= distdir %>/js/',  src: ['app.js'],  expand: true, cwd: '.tmp/concat/js/' },
-      {dest:'<%= distdir %>/css/', src: ['app.css'], expand: true, cwd: '.tmp/concat/css/' }
+      { dest: '<%= distdir %>/js/', src: ['app.js'], expand: true, cwd: '.tmp/concat/js/' },
+      { dest: '<%= distdir %>/css/', src: ['app.css'], expand: true, cwd: '.tmp/concat/css/' }
     ]
   },
   assets: {
     files: [
-      {dest: '<%= distdir %>/fonts/',  src: '*.{ttf,woff,woff2,eof,svg}', expand: true, cwd: 'node_modules/bootstrap/fonts/'},
-      {dest: '<%= distdir %>/fonts/',  src: '*.{ttf,woff,woff2,eof,eot,svg}', expand: true, cwd: 'node_modules/@fortawesome/fontawesome-free-webfonts/webfonts/'},
-      {dest: '<%= distdir %>/fonts/',  src: '*.{ttf,woff,woff2,eof,svg}', expand: true, cwd: 'node_modules/rdash-ui/dist/fonts/'},
-      {dest: '<%= distdir %>/images/', src: '**',                         expand: true, cwd: 'assets/images/'},
-      {dest: '<%= distdir %>/ico',     src: '**',                         expand: true, cwd: 'assets/ico'},
-      {dest: '<%= root %>/',          src: 'templates.json', cwd: ''}
+      { dest: '<%= distdir %>/fonts/', src: '*.{ttf,woff,woff2,eof,svg}', expand: true, cwd: 'node_modules/bootstrap/fonts/' },
+      { dest: '<%= distdir %>/fonts/', src: '*.{ttf,woff,woff2,eof,eot,svg}', expand: true, cwd: 'node_modules/@fortawesome/fontawesome-free-webfonts/webfonts/' },
+      { dest: '<%= distdir %>/fonts/', src: '*.{ttf,woff,woff2,eof,svg}', expand: true, cwd: 'node_modules/rdash-ui/dist/fonts/' },
+      { dest: '<%= distdir %>/images/', src: '**', expand: true, cwd: 'assets/images/' },
+      { dest: '<%= distdir %>/ico', src: '**', expand: true, cwd: 'assets/ico' },
+      { dest: '<%= root %>/', src: 'templates.json', cwd: '' }
     ]
   }
 };
@@ -205,8 +210,9 @@ gruntfile_cfg.uglify = {
   },
   vendor: {
     options: { preserveComments: 'some' }, // Preserve license comments
-    files: { '<%= distdir %>/js/vendor.js': ['<%= src.jsVendor %>'] ,
-             '<%= distdir %>/js/angular.js': ['<%= src.angularVendor %>']
+    files: {
+      '<%= distdir %>/js/vendor.js': ['<%= src.jsVendor %>'],
+      '<%= distdir %>/js/angular.js': ['<%= src.angularVendor %>']
     }
   }
 };
@@ -215,7 +221,7 @@ gruntfile_cfg.postcss = {
   build: {
     options: {
       processors: [
-        autoprefixer({browsers: 'last 2 versions'}), // add vendor prefixes
+        autoprefixer({ browsers: 'last 2 versions' }), // add vendor prefixes
         cssnano() // minify the result
       ]
     },
@@ -235,9 +241,9 @@ gruntfile_cfg.replace = {
   concat: {
     options: {
       patterns: [
-        { match: 'ENVIRONMENT',  replacement: '<%= grunt.config.get("environment") %>' },
+        { match: 'ENVIRONMENT', replacement: '<%= grunt.config.get("environment") %>' },
         { match: 'CONFIG_GA_ID', replacement: '<%= pkg.config.GA_ID %>' },
-        { match: /..\/webfonts\//g, replacement: '../fonts/'}
+        { match: /..\/webfonts\//g, replacement: '../fonts/' }
       ]
     },
     files: [
@@ -258,14 +264,32 @@ gruntfile_cfg.replace = {
 };
 
 function shell_buildBinary(p, a) {
-  var binfile = 'dist/portainer-'+p+'-'+a;
-  return [
-    'if [ -f '+(( p === 'windows' ) ? binfile+'.exe' : binfile)+' ]; then',
+  var binfile = 'dist/portainer-' + p + '-' + a;
+  if (p === 'linux') {
+    return [
+      'if [ -f ' + (binfile) + ' ]; then',
       'echo "Portainer binary exists";',
-    'else',
-      'build/build_in_container.sh ' + p + ' ' + a + ';',
-    'fi'
-  ].join(' ');
+      'else',
+      'build/build_binary.sh ' + p + ' ' + a + ';',
+      'fi'
+    ].join(' ');
+  } else {
+    return [
+      'powershell -Command "& {if (Get-Item -Path ' + binfile + '.exe -ErrorAction:SilentlyContinue) {',
+      'Write-Host "Portainer binary exists"',
+      '} else {',
+      '& ".\\build\\build_binary.ps1" -platform ' + p + ' -arch ' + a + '',
+      '}}"'
+    ].join(' ');
+  }
+}
+
+function shell_buildBinaryOnDevOps(p, a) {
+  if (p === 'linux') {
+    return 'build/build_binary_devops.sh ' + p + ' ' + a + ';';
+  } else {
+    return 'powershell -Command ".\\build\\build_binary_devops.ps1 -platform ' + p + ' -arch ' + a + '"';
+  }
 }
 
 function shell_run(arch) {
@@ -280,18 +304,29 @@ function shell_downloadDockerBinary(p, a) {
   var as = { 'amd64': 'x86_64', 'arm': 'armhf', 'arm64': 'aarch64' };
   var ip = ((ps[p] === undefined) ? p : ps[p]);
   var ia = ((as[a] === undefined) ? a : as[a]);
-  var binaryVersion = (( p === 'windows' ? '<%= shippedDockerVersionWindows %>' : '<%= shippedDockerVersion %>' ));
-  return [
-    'if [ -f '+(( p === 'windows' ) ? 'dist/docker.exe' : 'dist/docker')+' ]; then',
+  var binaryVersion = ((p === 'windows' ? '<%= shippedDockerVersionWindows %>' : '<%= shippedDockerVersion %>'));
+  if (p === 'linux') {
+    return [
+      'if [ -f dist/docker ]; then',
       'echo "Docker binary exists";',
-    'else',
+      'else',
       'build/download_docker_binary.sh ' + ip + ' ' + ia + ' ' + binaryVersion + ';',
-    'fi'
-  ].join(' ');
+      'fi'
+    ].join(' ');
+  } else {
+    return [
+      'powershell -Command "& {if (Get-Item -Path dist/docker.exe -ErrorAction:SilentlyContinue) {',
+      'Write-Host "Docker binary exists"',
+      '} else {',
+      '& ".\\build\\download_docker_binary.ps1" -docker_version ' + binaryVersion + '',
+      '}}"'
+    ].join(' ');
+  }
 }
 
 gruntfile_cfg.shell = {
   buildBinary: { command: shell_buildBinary },
+  buildBinaryOnDevOps: { command: shell_buildBinaryOnDevOps },
   run: { command: shell_run },
   downloadDockerBinary: { command: shell_downloadDockerBinary }
 };

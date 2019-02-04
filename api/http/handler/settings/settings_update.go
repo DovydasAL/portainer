@@ -18,6 +18,7 @@ type settingsUpdatePayload struct {
 	LDAPSettings                       *portainer.LDAPSettings
 	AllowBindMountsForRegularUsers     *bool
 	AllowPrivilegedModeForRegularUsers *bool
+	EnableHostManagementFeatures       *bool
 	SnapshotInterval                   *string
 	TemplatesURL                       *string
 }
@@ -65,7 +66,12 @@ func (handler *Handler) settingsUpdate(w http.ResponseWriter, r *http.Request) *
 	}
 
 	if payload.LDAPSettings != nil {
+		ldapPassword := settings.LDAPSettings.Password
+		if payload.LDAPSettings.Password != "" {
+			ldapPassword = payload.LDAPSettings.Password
+		}
 		settings.LDAPSettings = *payload.LDAPSettings
+		settings.LDAPSettings.Password = ldapPassword
 	}
 
 	if payload.AllowBindMountsForRegularUsers != nil {
@@ -74,6 +80,10 @@ func (handler *Handler) settingsUpdate(w http.ResponseWriter, r *http.Request) *
 
 	if payload.AllowPrivilegedModeForRegularUsers != nil {
 		settings.AllowPrivilegedModeForRegularUsers = *payload.AllowPrivilegedModeForRegularUsers
+	}
+
+	if payload.EnableHostManagementFeatures != nil {
+		settings.EnableHostManagementFeatures = *payload.EnableHostManagementFeatures
 	}
 
 	if payload.SnapshotInterval != nil && *payload.SnapshotInterval != settings.SnapshotInterval {
