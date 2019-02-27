@@ -1,5 +1,6 @@
 angular.module('portainer')
 .constant('API_ENDPOINT_AUTH', 'api/auth')
+.constant('API_ENDPOINT_CAS', 'api/cas')
 .constant('API_ENDPOINT_DOCKERHUB', 'api/dockerhub')
 .constant('API_ENDPOINT_ENDPOINTS', 'api/endpoints')
 .constant('API_ENDPOINT_ENDPOINT_GROUPS', 'api/endpoint_groups')

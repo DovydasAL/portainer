@@ -97,6 +97,7 @@ function ($q, $scope, Notifications, SettingsService, FileUploadService) {
       var settings = data;
       $scope.settings = settings;
       $scope.LDAPSettings = settings.LDAPSettings;
+      $scope.CASSettings = settings.CASSettings;
       $scope.formValues.TLSCACert = settings.LDAPSettings.TLSConfig.TLSCACert;
     })
     .catch(function error(err) {

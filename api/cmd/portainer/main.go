@@ -8,6 +8,7 @@ import (
 
 	"github.com/portainer/portainer"
 	"github.com/portainer/portainer/bolt"
+	"github.com/portainer/portainer/cas"
 	"github.com/portainer/portainer/cli"
 	"github.com/portainer/portainer/cron"
 	"github.com/portainer/portainer/crypto"
@@ -98,6 +99,10 @@ func initCryptoService() portainer.CryptoService {
 
 func initLDAPService() portainer.LDAPService {
 	return &ldap.Service{}
+}
+
+func initCASService() portainer.CASService {
+	return &cas.Service{}
 }
 
 func initGitService() portainer.GitService {
@@ -260,6 +265,7 @@ func initSettings(settingsService portainer.SettingsService, flags *portainer.CL
 					portainer.LDAPGroupSearchSettings{},
 				},
 			},
+			CASSettings:                        portainer.CASSettings{},
 			AllowBindMountsForRegularUsers:     true,
 			AllowPrivilegedModeForRegularUsers: true,
 			EnableHostManagementFeatures:       false,
@@ -523,6 +529,8 @@ func main() {
 
 	ldapService := initLDAPService()
 
+	casService := initCASService()
+
 	gitService := initGitService()
 
 	cryptoService := initCryptoService()
@@ -668,6 +676,7 @@ func main() {
 		JWTService:             jwtService,
 		FileService:            fileService,
 		LDAPService:            ldapService,
+		CASService:             casService,
 		GitService:             gitService,
 		SignatureService:       digitalSignatureService,
 		JobScheduler:           jobScheduler,

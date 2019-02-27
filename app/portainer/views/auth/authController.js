@@ -1,6 +1,6 @@
 angular.module('portainer.app')
-.controller('AuthenticationController', ['$q', '$scope', '$state', '$transition$', '$sanitize', 'Authentication', 'UserService', 'EndpointService', 'StateManager', 'Notifications', 'SettingsService', '$stateParams',
-function ($q, $scope, $state, $transition$, $sanitize, Authentication, UserService, EndpointService, StateManager, Notifications, SettingsService, $stateParams) {
+.controller('AuthenticationController', ['$q', '$scope', '$state', '$transition$', '$sanitize', '$location', '$window', 'Authentication', 'UserService', 'EndpointService', 'StateManager', 'Notifications', 'SettingsService', '$stateParams',
+function ($q, $scope, $state, $transition$, $sanitize, $location, $window, Authentication, UserService, EndpointService, StateManager, Notifications, SettingsService, $stateParams) {
 
   $scope.logo = StateManager.getState().application.logo;
 
@@ -12,6 +12,13 @@ function ($q, $scope, $state, $transition$, $sanitize, Authentication, UserServi
   $scope.state = {
     AuthenticationError: ''
   };
+
+  SettingsService.publicSettings()
+  .then(function success(settings) {
+      $scope.AuthenticationMethod = settings.AuthenticationMethod;
+      $scope.CASServerURL = settings.CASServerURL;
+      $scope.CASRedirectURL = encodeURIComponent(settings.CASRedirectURL);
+  });
 
   $scope.authenticateUser = function() {
     var username = $scope.formValues.Username;
@@ -74,6 +81,7 @@ function ($q, $scope, $state, $transition$, $sanitize, Authentication, UserServi
         $state.go('portainer.init.endpoint');
       } else {
         $state.go($stateParams.redirect || 'portainer.home');
+        $window.location.search = '';
       }
     })
     .catch(function error(err) {
@@ -100,5 +108,31 @@ function ($q, $scope, $state, $transition$, $sanitize, Authentication, UserServi
     }
   }
 
+  function casLogin(st) {
+      Authentication.casLogin(st)
+      .then(function success() {
+          $state.go('portainer.home');
+          $window.location.search = '';
+      })
+      .catch(function error() {
+          $scope.state.AuthenticationError = 'Failed to authenticate with CAS Server';
+      });
+    }
+
+    function getParameter(param) {
+      var URL = $location.absUrl();
+      var params = URL.split('?');
+      for (var i = 0; i < params.length; i++) {
+          var parameter = params[i].split('=');
+          if (parameter[0] === param) {
+              return parameter[1].split('#')[0];
+          }
+      }
+      return null;
+    }
+
   initView();
+  if (getParameter('ticket') !== null) {
+      casLogin(getParameter('ticket'));
+  }
 }]);

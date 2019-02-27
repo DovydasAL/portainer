@@ -3,6 +3,9 @@ function SettingsViewModel(data) {
   this.BlackListedLabels = data.BlackListedLabels;
   this.AuthenticationMethod = data.AuthenticationMethod;
   this.LDAPSettings = data.LDAPSettings;
+  this.CASSettings = data.CASSettings;
+  this.CASServerURL = data.CASServerURL;
+  this.CASRedirectURL = data.CASRedirectURL;
   this.AllowBindMountsForRegularUsers = data.AllowBindMountsForRegularUsers;
   this.AllowPrivilegedModeForRegularUsers = data.AllowPrivilegedModeForRegularUsers;
   this.SnapshotInterval = data.SnapshotInterval;
@@ -30,4 +33,11 @@ function LDAPGroupSearchSettings(GroupBaseDN, GroupAttribute, GroupFilter) {
   this.GroupBaseDN = GroupBaseDN;
   this.GroupAttribute = GroupAttribute;
   this.GroupFilter = GroupFilter;
+}
+
+function CASSettingsViewModel(data) {
+  this.CASServerURL = data.CASServerURL;
+  this.CASRedirectURL = data.CASRedirectURL;
+  this.CASAutoCreateUsers = data.CASAutoCreateUsers;
+  this.UseServiceValidateEndpoint = data.UseServiceValidateEndpoint;
 }

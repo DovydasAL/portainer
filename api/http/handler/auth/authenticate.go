@@ -21,12 +21,23 @@ type authenticateResponse struct {
 	JWT string `json:"jwt"`
 }
 
+type casPayload struct {
+	ST string
+}
+
 func (payload *authenticatePayload) Validate(r *http.Request) error {
 	if govalidator.IsNull(payload.Username) {
 		return portainer.Error("Invalid username")
 	}
 	if govalidator.IsNull(payload.Password) {
 		return portainer.Error("Invalid password")
+	}
+	return nil
+}
+
+func (payload *casPayload) Validate(r *http.Request) error {
+	if govalidator.IsNull(payload.ST) {
+		return portainer.Error("Invalid CAS Service Ticket")
 	}
 	return nil
 }
@@ -80,6 +91,52 @@ func (handler *Handler) authenticateLDAP(w http.ResponseWriter, user *portainer.
 	}
 
 	return handler.writeToken(w, user)
+}
+
+func (handler *Handler) authenticateCas(w http.ResponseWriter, r *http.Request) *httperror.HandlerError {
+	var payload casPayload
+	err := request.DecodeAndValidateJSONPayload(r, &payload)
+	if err != nil {
+		return &httperror.HandlerError{http.StatusBadRequest, "Invalid request payload", err}
+	}
+
+	settings, err := handler.SettingsService.Settings()
+	if err != nil {
+		return &httperror.HandlerError{http.StatusInternalServerError, "Unable to retrieve settings from the database", err}
+	}
+
+	if settings.AuthenticationMethod != 3 {
+		return &httperror.HandlerError{http.StatusForbidden, "CAS Authentication is not being used", err}
+	}
+
+	username, err := handler.CASService.ValidateServiceTicket(payload.ST, &settings.CASSettings)
+	if err != nil {
+		return &httperror.HandlerError{http.StatusForbidden, "Invalid service ticket", portainer.ErrUnauthorized}
+	}
+
+	u, err := handler.UserService.UserByUsername(username)
+	if err != nil && err != portainer.ErrObjectNotFound {
+		return &httperror.HandlerError{http.StatusInternalServerError, "Unable to retrieve user with specified username from database", err}
+	}
+
+	if u == nil && !settings.CASSettings.CASAutoCreateUsers {
+		return &httperror.HandlerError{http.StatusForbidden, "Unregistered account", portainer.ErrUnauthorized}
+	}
+
+	if u == nil {
+		user := &portainer.User{
+			Username: username,
+			Role: portainer.StandardUserRole,
+		}
+
+		err := handler.UserService.CreateUser(user)
+		if err != nil {
+			return &httperror.HandlerError{http.StatusInternalServerError, "Unable to persist user in the database", err}
+		}
+		return handler.writeToken(w, user)
+	}
+
+	return handler.writeToken(w, u)
 }
 
 func (handler *Handler) authenticateInternal(w http.ResponseWriter, user *portainer.User, password string) *httperror.HandlerError {

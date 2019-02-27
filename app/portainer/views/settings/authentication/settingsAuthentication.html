@@ -37,6 +37,16 @@
                   <p>LDAP authentication</p>
                 </label>
               </div>
+              <div>
+                <input type="radio" id="registry_cas" ng-model="settings.AuthenticationMethod" ng-value="3">
+                <label for="registry_cas">
+                  <div class="boxselector_header">
+                    <i class="fa fa-users" aria-hidden="true" style="margin-right: 2px;"></i>
+                    CAS
+                  </div>
+                  <p>CAS authentication</p>
+                </label>
+              </div>
             </div>
           </div>
           <div class="col-sm-12 form-section-title">
@@ -50,6 +60,11 @@
           <div class="form-group" ng-if="settings.AuthenticationMethod === 2">
             <span class="col-sm-12 text-muted small">
               When using LDAP authentication, Portainer will delegate user authentication to a LDAP server and fallback to internal authentication if LDAP authentication fails.
+            </span>
+          </div>
+          <div class="form-group" ng-if="settings.AuthenticationMethod === 3">
+            <span class="col-sm-12 text-muted small">
+              When using CAS authentication, Portainer will allow users to optionally authenticate with a CAS Server.
             </span>
           </div>
 
@@ -306,6 +321,64 @@
             <!-- !group-search-settings -->
           </div>
 
+          <div ng-if="settings.AuthenticationMethod === 3">
+            <div class="col-sm-12 form-section-title">
+              CAS configuration
+             </div>
+
+            <div class="form-group">
+              <label for="cas_server_url" class="col-sm-3 col-lg-2 control-label text-left">
+                CAS Server URL
+                <portainer-tooltip position="bottom" message="CAS Server URL where users are redirected and service tickets are validated"></portainer-tooltip>
+              </label>
+              <div class="col-sm-9 col-lg-10">
+                <input type="text" class="form-control" id="cas_server_url" ng-model="CASSettings.CASServerURL" placeholder="https://example.org">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="cas_redirect_url" class="col-sm-3 col-lg-2 control-label text-left">
+                CAS Redirect URL
+                <portainer-tooltip position="bottom" message="Set this as your portainer home"></portainer-tooltip>
+              </label>
+              <div class="col-sm-9 col-lg-10">
+                <input type="text" class="form-control" id="cas_redirect_url" ng-model="CASSettings.CASRedirectURL" placeholder="https://myportainer.org/">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <span class="col-sm-12 text-muted small">
+                With automatic user provisioning enabled, Portainer will create user(s) automatically with standard user role. If disabled, users must be created in Portainer in order to login.
+              </span>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-12">
+                <label for="cas_provisioning">
+                  Automatic user provisioning
+                </label>
+                <label class="switch" style="margin-left: 20px">
+                  <input type="checkbox" ng-model="CASSettings.CASAutoCreateUsers"><i></i>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <span class="col-sm-12 text-muted small">
+                With this enabled, portainer will verify a service ticket using the /serviceValidate endpoint.
+              </span>
+            </div>
+            <div class="form-group">
+              <div class="col-sm-12">
+                <label for="cas_servicevalidate">
+                  Use service validate endpoint
+                </label>
+                <label class="switch" style="margin-left: 20px">
+                  <input type="checkbox" ng-model="CASSettings.UseServiceValidateEndpoint"><i></i>
+                </label>
+              </div>
+            </div>
+
+          </div>
           <!-- actions -->
           <div class="form-group">
             <div class="col-sm-12">

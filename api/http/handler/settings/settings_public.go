@@ -15,6 +15,8 @@ type publicSettingsResponse struct {
 	AllowPrivilegedModeForRegularUsers bool                           `json:"AllowPrivilegedModeForRegularUsers"`
 	EnableHostManagementFeatures       bool                           `json:"EnableHostManagementFeatures"`
 	ExternalTemplates                  bool                           `json:"ExternalTemplates"`
+	CASServerURL                       string                         `json:"CASServerURL"`
+	CASRedirectURL                     string                         `json:"CASRedirectURL"`
 }
 
 // GET request on /api/settings/public
@@ -31,6 +33,8 @@ func (handler *Handler) settingsPublic(w http.ResponseWriter, r *http.Request) *
 		AllowPrivilegedModeForRegularUsers: settings.AllowPrivilegedModeForRegularUsers,
 		EnableHostManagementFeatures:       settings.EnableHostManagementFeatures,
 		ExternalTemplates:                  false,
+		CASServerURL:                       settings.CASSettings.CASServerURL,
+		CASRedirectURL:                     settings.CASSettings.CASRedirectURL,
 	}
 
 	if settings.TemplatesURL != "" {
