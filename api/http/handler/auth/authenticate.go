@@ -109,9 +109,14 @@ func (handler *Handler) authenticateCas(w http.ResponseWriter, r *http.Request) 
 		return &httperror.HandlerError{http.StatusForbidden, "CAS Authentication is not being used", err}
 	}
 
-	username, err := handler.CASService.ValidateServiceTicket(payload.ST, &settings.CASSettings)
+	response, err := handler.CASService.ValidateServiceTicket(payload.ST, &settings.CASSettings)
 	if err != nil {
-		return &httperror.HandlerError{http.StatusForbidden, "Invalid service ticket", portainer.ErrUnauthorized}
+		return &httperror.HandlerError{http.StatusForbidden, "Invalid service ticket", err}
+	}
+
+	username, err := handler.CASService.ExtractUsername(response, &settings.CASSettings)
+	if err != nil {
+		return &httperror.HandlerError{http.StatusInternalServerError, "Unable to extract username", err}
 	}
 
 	u, err := handler.UserService.UserByUsername(username)

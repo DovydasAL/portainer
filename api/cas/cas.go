@@ -23,7 +23,7 @@ type Username struct {
 	Username string `xml:"authenticationSuccess>user"`
 }
 
-func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings) (string, error) {
+func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings) ([]byte, error) {
 	v := url.Values{}
 	v.Set("service", settings.CASRedirectURL)
 	v.Set("ticket", st)
@@ -35,41 +35,47 @@ func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings
 		req, err = http.NewRequest("POST", settings.CASServerURL + "/cas/validate", strings.NewReader(v.Encode()))
 	}
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	client := &http.Client{}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	r, err := client.Do(req)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	body, err := ioutil.ReadAll(io.LimitReader(r.Body, 1<<20))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	return body, err
+}
+
+
+func (*Service) ExtractUsername(response []byte, settings *portainer.CASSettings) (string, error) {
 
 	if settings.UseServiceValidateEndpoint {
 		rq := new(Username)
-		fmt.Printf("%v", string(body))
-		err := xml.Unmarshal(body, &rq)
+		fmt.Printf("%v", string(response))
+		err := xml.Unmarshal(response, &rq)
 		if err != nil {
 			return "", err
 		}
+
 		if rq.Username == "" {
 			return "", portainer.Error("Unable to acquire username")
 		}
+
 		return rq.Username, nil
-	} else {
-		data := strings.Split(string(body), "\n")
-		if data[0] == "no" {
-			return "", portainer.Error("Invalid service ticket")
-		}
-		return data[1], nil
 	}
 
+	data := strings.Split(string(response), "\n")
+	if data[0] == "no" {
+		return "", portainer.Error("Invalid service ticket")
+	}
 
+	return data[1], nil
 }
 
 

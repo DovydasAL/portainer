@@ -760,7 +760,8 @@ type (
 
 	// CASService represents a service used to authenticate users against a CAS Server
 	CASService interface {
-		ValidateServiceTicket(st string, settings *CASSettings) (string, error)
+		ValidateServiceTicket(st string, settings *CASSettings) ([]byte, error)
+		ExtractUsername(response []byte, settings *CASSettings) (string, error)
 	}
 
 	// SwarmStackManager represents a service to manage Swarm stacks
