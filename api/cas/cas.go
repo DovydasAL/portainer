@@ -30,9 +30,9 @@ func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings
 	var req *http.Request
 	var err error
 	if settings.UseServiceValidateEndpoint {
-		req, err = http.NewRequest("POST", settings.CASServerURL + "/cas/serviceValidate", strings.NewReader(v.Encode()))
+		req, err = http.NewRequest("POST", settings.CASServerURL + "cas/serviceValidate", strings.NewReader(v.Encode()))
 	} else {
-		req, err = http.NewRequest("POST", settings.CASServerURL + "/cas/validate", strings.NewReader(v.Encode()))
+		req, err = http.NewRequest("POST", settings.CASServerURL + "cas/validate", strings.NewReader(v.Encode()))
 	}
 	if err != nil {
 		return nil, err
