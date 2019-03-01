@@ -2,7 +2,7 @@ package cas
 
 import (
 	"encoding/xml"
-	"fmt"
+	"github.com/clbanning/mxj"
 	"github.com/portainer/portainer"
 	"io"
 	"io/ioutil"
@@ -22,6 +22,8 @@ type Service struct {}
 type Username struct {
 	Username string `xml:"authenticationSuccess>user"`
 }
+
+type Map map[string]interface{}
 
 func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings) ([]byte, error) {
 	v := url.Values{}
@@ -52,12 +54,10 @@ func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings
 	return body, err
 }
 
-
 func (*Service) ExtractUsername(response []byte, settings *portainer.CASSettings) (string, error) {
 
 	if settings.UseServiceValidateEndpoint {
 		rq := new(Username)
-		fmt.Printf("%v", string(response))
 		err := xml.Unmarshal(response, &rq)
 		if err != nil {
 			return "", err
@@ -76,6 +76,23 @@ func (*Service) ExtractUsername(response []byte, settings *portainer.CASSettings
 	}
 
 	return data[1], nil
+}
+
+func (*Service) ExtractGroups(response []byte, settings *portainer.CASSettings) ([]string, error) {
+
+	datamap, err := mxj.NewMapXml(response)
+	if err != nil {
+		return nil, err
+	}
+
+	path := "serviceResponse.authenticationSuccess.attributes." + settings.CASGroupAttribute
+	value, err := datamap.ValueForPath(path)
+	if err != nil {
+		return nil, err
+	}
+
+	groupList := strings.Split(value.(string), settings.GroupDelimiter)
+	return groupList, nil
 }
 
 

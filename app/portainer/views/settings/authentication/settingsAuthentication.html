@@ -364,17 +364,53 @@
 
             <div class="form-group">
               <span class="col-sm-12 text-muted small">
-                With this enabled, Portainer will verify a service ticket using the /serviceValidate endpoint.
+                With this enabled, Portainer will verify a service ticket using the /serviceValidate endpoint. Enabling this allows for group provisioning.
               </span>
             </div>
             <div class="form-group">
               <div class="col-sm-12">
-                <label for="cas_servicevalidate">
+                <label for="cas_service_validate">
                   Use service validate endpoint
                 </label>
                 <label class="switch" style="margin-left: 20px">
                   <input type="checkbox" ng-model="CASSettings.UseServiceValidateEndpoint"><i></i>
                 </label>
+              </div>
+            </div>
+
+            <div class="form-group" ng-if="CASSettings.UseServiceValidateEndpoint">
+              <span class="col-sm-12 text-muted small">
+                With this enabled, Portainer will automatically provision users into groups using a specified group attribute.
+              </span>
+            </div>
+            <div class="form-group" ng-if="CASSettings.UseServiceValidateEndpoint">
+              <div class="col-sm-12">
+                <label for="cas_group_provisioning">
+                  Use group provisioning
+                </label>
+                <label class="switch" style="margin-left:20px">
+                  <input type="checkbox" ng-model="CASSettings.GroupProvisioning"><i></i>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" ng-if="CASSettings.UseServiceValidateEndpoint">
+              <label for="cas_group_attribute" class="col-sm-3 col-lg-2 control-label text-left">
+                Group provisioning attribute
+                <portainer-tooltip position="bottom" message="This is your CAS Service Validate attribute that corresponds to the list of groups for a user"></portainer-tooltip>
+              </label>
+              <div class="col-sm-1 col-lg-1">
+                <input type="text" class="form-control" id="cas_group_attribute" ng-model="CASSettings.CASGroupAttribute" placeholder="roles">
+              </div>
+            </div>
+
+            <div class="form-group" ng-if="CASSettings.UseServiceValidateEndpoint">
+              <label for="cas_group_delimiter" class="col-sm-3 col-lg-2 control-label text-left">
+                Group attribute delimiter
+                <portainer-tooltip position="bottom" message="Enter the character that separates your groups in the above group attribute"></portainer-tooltip>
+              </label>
+              <div class="col-sm-1 col-lg-1">
+                <input type="text" class="form-control" id="cas_group_delimiter" ng-model="CASSettings.GroupDelimiter" placeholder="|">
               </div>
             </div>
 

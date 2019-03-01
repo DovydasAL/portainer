@@ -62,6 +62,9 @@ type (
 		CASRedirectURL             string `json:"CASRedirectURL"`
 		CASAutoCreateUsers         bool   `json:"CASAutoCreateUsers"`
 		UseServiceValidateEndpoint bool   `json:"UseServiceValidateEndpoint"`
+		GroupProvisioning          bool   `json:"GroupProvisioning"`
+		CASGroupAttribute          string `json:"CASGroupAttribute"`
+		GroupDelimiter             string `json:"GroupDelimiter"`
 	}
 
 	// TLSConfiguration represents a TLS configuration
@@ -762,6 +765,7 @@ type (
 	CASService interface {
 		ValidateServiceTicket(st string, settings *CASSettings) ([]byte, error)
 		ExtractUsername(response []byte, settings *CASSettings) (string, error)
+		ExtractGroups(response []byte, settings *CASSettings) ([]string, error)
 	}
 
 	// SwarmStackManager represents a service to manage Swarm stacks

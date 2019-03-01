@@ -138,7 +138,21 @@ func (handler *Handler) authenticateCas(w http.ResponseWriter, r *http.Request) 
 		if err != nil {
 			return &httperror.HandlerError{http.StatusInternalServerError, "Unable to persist user in the database", err}
 		}
-		return handler.writeToken(w, user)
+
+		u = user
+	}
+
+	if settings.CASSettings.GroupProvisioning && settings.CASSettings.UseServiceValidateEndpoint {
+		var groups []string
+		groups, err = handler.CASService.ExtractGroups(response, &settings.CASSettings)
+		if err != nil {
+			return &httperror.HandlerError{http.StatusInternalServerError, "Unable to extract groups", err}
+		}
+
+		err = handler.addUserIntoTeamsCAS(u, groups)
+		if err != nil {
+			log.Printf("Warning: unable to automatically add user into teams: %s\n", err.Error())
+		}
 	}
 
 	return handler.writeToken(w, u)
@@ -190,6 +204,42 @@ func (handler *Handler) writeToken(w http.ResponseWriter, user *portainer.User) 
 	}
 
 	return response.JSON(w, &authenticateResponse{JWT: token})
+}
+
+func (handler *Handler) addUserIntoTeamsCAS(user *portainer.User, groups []string) error {
+	teams, err := handler.TeamService.Teams()
+	if err != nil {
+		return err
+	}
+
+	userMemberships, err := handler.TeamMembershipService.TeamMembershipsByUserID(user.ID)
+	if err != nil {
+		return err
+	}
+
+	for _, membership := range userMemberships {
+		err := handler.TeamMembershipService.DeleteTeamMembership(membership.ID)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, team := range teams {
+		if teamExists(team.Name, groups) {
+
+			membership := &portainer.TeamMembership{
+				UserID: user.ID,
+				TeamID: team.ID,
+				Role: portainer.TeamMember,
+			}
+			err := handler.TeamMembershipService.CreateTeamMembership(membership)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (handler *Handler) addUserIntoTeams(user *portainer.User, settings *portainer.LDAPSettings) error {

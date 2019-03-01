@@ -40,4 +40,7 @@ function CASSettingsViewModel(data) {
   this.CASRedirectURL = data.CASRedirectURL;
   this.CASAutoCreateUsers = data.CASAutoCreateUsers;
   this.UseServiceValidateEndpoint = data.UseServiceValidateEndpoint;
+  this.GroupProvisioning = data.GroupProvisioning;
+  this.CASGroupAttribute = data.CASGroupAttribute;
+  this.GroupDelimiter = data.GroupDelimiter;
 }
