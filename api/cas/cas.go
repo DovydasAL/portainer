@@ -25,6 +25,7 @@ type Username struct {
 
 type Map map[string]interface{}
 
+// ValidateServiceTicket takes a service ticket and returns the response from the CAS Server
 func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings) ([]byte, error) {
 	v := url.Values{}
 	v.Set("service", settings.CASRedirectURL)
@@ -54,6 +55,7 @@ func (*Service) ValidateServiceTicket(st string, settings *portainer.CASSettings
 	return body, err
 }
 
+// ExtractUsername takes the response from the CAS Server and returns the username from the response.
 func (*Service) ExtractUsername(response []byte, settings *portainer.CASSettings) (string, error) {
 
 	if settings.UseServiceValidateEndpoint {
@@ -78,6 +80,7 @@ func (*Service) ExtractUsername(response []byte, settings *portainer.CASSettings
 	return data[1], nil
 }
 
+// ExtractGroups takes the response from the CAS Server and returns the list of groups from the response.
 func (*Service) ExtractGroups(response []byte, settings *portainer.CASSettings) ([]string, error) {
 
 	datamap, err := mxj.NewMapXml(response)
