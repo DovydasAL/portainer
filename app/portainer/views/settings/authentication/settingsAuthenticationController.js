@@ -61,6 +61,9 @@ function ($q, $scope, Notifications, SettingsService, FileUploadService) {
 
   $scope.saveSettings = function() {
     var settings = $scope.settings;
+    if (settings.CASSettings.CASServerURL.slice(-1) !== '/') {
+      settings.CASSettings.CASServerURL = settings.CASSettings.CASServerURL + '/';
+    }
     var TLSCAFile = $scope.formValues.TLSCACert !== settings.LDAPSettings.TLSConfig.TLSCACert ? $scope.formValues.TLSCACert : null;
 
     var uploadRequired = ($scope.LDAPSettings.TLSConfig.TLS || $scope.LDAPSettings.StartTLS) && !$scope.LDAPSettings.TLSConfig.TLSSkipVerify;
