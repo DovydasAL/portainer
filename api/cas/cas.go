@@ -95,6 +95,10 @@ func (*Service) ExtractGroups(response []byte, settings *portainer.CASSettings) 
 	}
 
 	groupList := strings.Split(value.(string), settings.GroupDelimiter)
+	var groups []string
+	for _, group := range groupList {
+		groups = append(groups, strings.TrimSpace(group))
+	}
 	return groupList, nil
 }
 
